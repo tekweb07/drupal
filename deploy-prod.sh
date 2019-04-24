@@ -5,10 +5,10 @@ git pull origin master
 composer install
 
 # Mettre à jour la BDD
-druch updb -y
+drush updb -y
 
 # Importer les configurations
-drush cim-y
+drush cim -y
 
 # Vider les caches
 drush cr
