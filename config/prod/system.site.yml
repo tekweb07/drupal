@@ -1,0 +1,14 @@
+uuid: 20a75f20-da29-4063-b527-7dd8a4c7aacc
+name: 'Licence Prod'
+mail: akkustekin@hotmail.fr
+slogan: ''
+page:
+  403: ''
+  404: ''
+  front: /node
+admin_compact_mode: false
+weight_select_max: 100
+langcode: en
+default_langcode: fr
+_core:
+  default_config_hash: yXadRE77Va-G6dxhd2kPYapAvbnSvTF6hO4oXiOEynI
