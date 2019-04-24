@@ -1,0 +1,163 @@
+<?php
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_help().
+ *
+ * @param $route_name
+ * @param RouteMatchInterface $route_match
+ * @return string
+ */
+function hello_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main help for the hello module.
+    case 'help.page.hello':
+      return '<p>' . t('This module aims at recording user connection activity.') . '</p>';
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function hello_cron() {
+  \Drupal::messenger()->addMessage(t('Hello cron.'));
+
+  $purge_days_number = \Drupal::config('hello.settings')->get('purge_days_number');
+  if ($purge_days_number != '0') {
+    $nombre_suppressions = \Drupal::database()->delete('hello_user_statistics')
+      ->condition('time', REQUEST_TIME - $purge_days_number * (24 * 3600), '<')
+      ->execute();
+    \Drupal::messenger()->addMessage(t('@nombre_suppressions records have been deleted.',
+      ['@nombre_suppressions' => $nombre_suppressions]));
+  }
+}
+
+/**
+ * Implements hook_user_login().
+ *
+ * @param UserInterface $account
+ * @throws Exception
+ */
+function hello_user_login(UserInterface $account) {
+  // Fonction t().
+  // Il existe 3 types de jetons indiquant comment on substitue les variables.
+  // ! : le contenu de la variable est interprété.
+  // @ : le contenu de la variable est échappé.
+  // % : le contenu de la variable est échappé et la balise <em> est ajoutée.
+  \Drupal::messenger()->addMessage(t('Welcome dear %name!',
+                       ['%name' => $account->getAccountName()]
+  ));
+  // Enregistrement des connexions utilisateurs.
+  $roles = \Drupal::config('hello.settings')->get('user_statistics_roles');
+  $user_roles = $account->getRoles();
+  $diff = array_intersect($roles, $user_roles);
+  if (count($diff) > '0') {
+    \Drupal::database()->insert('hello_user_statistics')
+      ->fields([
+        'uid' => $account->id(),
+        'action' => '1',
+        'time' => REQUEST_TIME,
+      ])
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_user_logout().
+ *
+ * @param AccountProxyInterface $account
+ * @throws Exception
+ */
+function hello_user_logout(AccountProxyInterface $account) {
+  // Enregistrement des déconnexions utilisateurs.
+  $roles = \Drupal::config('hello.settings')->get('user_statistics_roles');
+  $user_roles = $account->getAccount()->getRoles();
+  $diff = array_intersect($roles, $user_roles);
+  if (count($diff) > '0') {
+    \Drupal::database()->insert('hello_user_statistics')
+      ->fields([
+        'uid' => $account->id(),
+        'action' => '0',
+        'time' => REQUEST_TIME,
+      ])
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * @param $existing
+ * @param $type
+ * @param $theme
+ * @param $path
+ * @return array
+ */
+function hello_theme($existing, $type, $theme, $path) {
+  return [
+    'hello_user_connexion' => [
+      'template'  => 'hello-user-connexion',  // Automatiquement appelé en fonction du nom du hook de thème.
+      'variables' => [
+        'user'  => NULL,
+        'count' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_entity_delete().
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ */
+function hello_entity_delete(EntityInterface $entity) {
+  // Delete the entity's entries.
+  if ($entity->getEntityTypeId() == 'user') {
+    \Drupal::database()->delete('hello_user_statistics')
+      ->condition('uid', $entity->id())
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * @param array $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ */
+function hello_form_user_admin_settings_alter(array &$form, FormStateInterface $form_state) {
+  $user_statistics_roles = \Drupal::config('hello.settings')->get('user_statistics_roles');
+  $roles = \Drupal::entityTypeManager()->getStorage('user_role')->loadMultiple();
+  unset($roles['anonymous']);
+  $options = [];
+  foreach ($roles as $role) {
+    $options[$role->id()] = $role->label();
+  }
+  $form['user_statistics'] = [
+    '#type' => 'details',
+    '#title' => t('Roles for which to collect activity statistics.'),
+    '#open' => TRUE,
+    '#weight' => '-100',
+  ];
+  $form['user_statistics']['roles'] = [
+    '#type' => 'checkboxes',
+    '#options' => $options,
+    '#default_value' => $user_statistics_roles,
+  ];
+  $form['#submit'][] = 'hello_admin_user_settings_submit';
+}
+
+/**
+ * @param $form
+ * @param FormStateInterface $form_state
+ */
+function hello_admin_user_settings_submit($form, FormStateInterface $form_state) {
+  $config = \Drupal::configFactory()->getEditable('hello.settings');
+  $config->set('user_statistics_roles', $form_state->getValue('roles'))
+    ->save();
+}
