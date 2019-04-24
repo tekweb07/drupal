@@ -1,0 +1,14 @@
+# Nom du module.
+name: 'Hello'
+# Description du module.
+description: 'Hello module for D8 developer training.'
+# Type de code (module, theme...).
+type: module
+# Version de Drupal pour laquelle le module est développée.
+core: 8.x
+# Version du module.
+version: '8.x-1.0'
+# Groupe du module.
+package: 'Training'
+# Page de configuration.
+configure: hello.admin_form

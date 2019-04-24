@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the hello module.
+ */
+
+use Drupal\Core\Database\Database;
+
+/**
+ * Implements hook_schema().
+ */
+function hello_schema() {
+  $schema['hello_user_statistics'] = [
+    'description' => 'Stores user connection statistics.',
+    'fields' => [
+      'id' => [
+        'description' => 'Primary Key: Unique history ID.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'time' => [
+        'description' => 'Timestamp of user action.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'uid' => [
+        'type' => 'int',
+        'description' => "Store user ID.",
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'action' => [
+        'description' => 'Action.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ],
+    ],
+    'primary key' => ['id'],
+  ];
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function hello_uninstall() {
+  \Drupal::state()->delete('hello_form_submission_time');
+}
+
+/**
+ * Add an 'action' field to the hello_user_statistics table.
+ */
+function hello_update_8100() {
+  $field_spec = [
+    'type' => 'int',
+    'size' => 'tiny',
+    'description' => "Store user action.",
+    'not null' => TRUE,
+  ];
+  $schema = Database::getConnection()->schema();
+  $schema->addField('hello_user_statistics', 'action', $field_spec);
+}

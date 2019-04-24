@@ -1,0 +1,11 @@
+services:
+  access_check.hello:
+    class: Drupal\hello\Access\HelloAccessCheck
+    tags:
+      - { name: access_check, applies_to: _access_hello }
+    arguments: ['@datetime.time']
+
+  hello.access_restriction:
+    class: Drupal\hello\Routing\AccessRestriction
+    tags:
+      - { name: event_subscriber }

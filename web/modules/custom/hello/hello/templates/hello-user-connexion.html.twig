@@ -1,0 +1,21 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a user connexions count message.
+ *
+ * Available variables:
+ * - user: The user object.
+ * - count: The user connexions count.
+ *
+ * @see template_preprocess_hello_user_connexion()
+ *
+ * @ingroup themeable
+ */
+#}
+<div>
+  <span>
+    {% trans %}
+      The user {{ user.label }} has been connected {{ count }} time(s).
+    {% endtrans %}
+  </span>
+</div>
