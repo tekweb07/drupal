@@ -10,6 +10,7 @@ module: {  }
 theme: {  }
 blacklist:
   - system.site
+  - 'webform.*'
 graylist: {  }
 graylist_dependents: true
 graylist_skip_equal: true
